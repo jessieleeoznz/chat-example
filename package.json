@@ -7,8 +7,7 @@
     "socket.io": "^1.7.3"
   },
   "scripts": {
-    "start": "node index.js",
-    "web": "lite-server"
+    "start": "lite-server"
   },
   "devDependencies": {
     "lite-server": "^2.4.0"
