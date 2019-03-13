@@ -3,8 +3,9 @@ $(function () {
   let intervalId;
   var records = {};
   const editStatusName = "(edited)";
+  let action;
 
-  $('form').submit(function () {
+  $("#send").click(function () {
     let id = $('#send').attr('name');
     let msg = $('#msg').val();
     if (id === "send") {
@@ -12,8 +13,21 @@ $(function () {
     }
     sendMsg(id, msg);
     $('#msg').val('');
-    $('#send').attr('name', "send");
+    $('#send').attr('name', 'send');
     return false;
+  });
+
+  $("#new").click(function () {
+    $('span[name="message-content"]').removeClass('editing');
+    $("#to").prop("readonly", false);
+    $("#send").attr('name', 'send');
+    return false
+  });
+
+  $("#me").keyup(function (ev) {
+    if (ev.which === 13 && !!$("#me").val()) {
+      sub();
+    }
   });
 
   $('#sub').click(() => {
@@ -32,7 +46,7 @@ $(function () {
       console.log('connect', socket);
       intervalId = setInterval(() => {
         socket.emit('ping');
-      }, 5000);
+      }, 25000);
 
       let me = $('#me').val();
       if (me) {
@@ -51,72 +65,130 @@ $(function () {
     socket.on('disconnect', reason => {
       console.log('disconnect', reason);
     });
-    socket.on('chat', (from, id, msg) => {
-      if (!!records[id]) {
-        editMsg(id, msg);
-      } else {
-        dispMsg(from, id, `<span id=message-name ><- ${from}: </span><span id=message-content>${msg}</span>`);
+    socket.on('chat', (from, id, msg, action) => {
+      if (action === 'display') {
+        if (!!records[id]) {
+          $(`#message${id}`).html(`<- ${from}: ${msg}${editStatusName}`);
+        } else {
+          dispMsg(from, id, `<div id=message${id}><span id=name${id} name=message-name><- ${from}: </span><span id=message-content>${msg}</span></div>`);
+          let to = from;
+          bindSingleEditTo(to, id);
+        }
       }
-
+      else if (action === 'delete') {
+        $(`#${id}`).remove();
+        records[id] = null;
+      }
     });
   }
 
   function sendMsg(id, msg) {
     let to = $('#to').val();
-    // socket.editMsgId = id;
-    socket.emit('chat', to, id, msg);
+    action = 'display';
+    socket.emit('chat', to, id, msg, action);
     if (!!records[id]) {
-      editMsg(id, msg);
+      editMsg(to, id, msg);
     } else {
-      dispMsg(to, id, `<span id=message-name >-> ${to}: </span><span id=span${id}>${msg}</span>`);
+      dispMsg(to, id, `<div id=message${id} class=inline><span id=name${id} name=message-name>-> ${to}: </span><span id=content${id} name=message-content>${msg}</span></div>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<div id=del${id} class=inline style="display:none"><span id=x>X</span></div>`);
+      $(`#${id}`).hover(
+        function () {
+          $(`#del${id}`).css('display', 'inline');
+        }, function () {
+          $(`#del${id}`).css('display', 'none');
+        }
+      );
     }
-    bindSingleEditText(to, id)
+    bindSingleEditTo(to, id);
+    bindSingleEditText(to, id);
+    bindSingleDeleteButton(to, id);
+    $('span[name="message-content"]').removeClass('editing');
+    $("#to").prop("readonly", false);
+    return;
   }
 
   function dispSubmsg(msg) {
-    $('#messages').append($(`<li>`).text(msg));
-    window.scrollTo(0, document.body.scrollHeight);
+    let to = msg.replace(/[\s]has[\s]subscribed/, '');
+    $('#messages').append($(`<li id=Submsg${to}>`).text(msg));
+    let messageBody = document.querySelector('#messages');
+    messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
+    // window.scrollTo(0, document.body.scrollHeight);
+    bindSubmsg(to);
   }
 
   function dispMsg(to, id, msg) {
     $('#messages').append(`<li id = ${id} name = ${to}>${msg}`);
     records[id] = id;
-    window.scrollTo(0, document.body.scrollHeight);
+    let messageBody = document.querySelector('#messages');
+    messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
+    // window.scrollTo(0, document.body.scrollHeight);
   }
 
-  function editMsg(id, msg) {
-    $(`#${id}`).html(`${msg}${editStatusName}`);
-    $('li').removeClass("editing");
+  function editMsg(to, id, msg) {
+    $(`#name${id}`).html(`-> ${to}: `);
+    $(`#content${id}`).html(`${msg}${editStatusName}`);
+  }
+
+  function bindSubmsg(to) {
+    $(`#Submsg${to}`).click(function () {
+      editToAera(to);
+    });
+  }
+
+  function bindSingleEditTo(to, id) {
+    $(`#name${id}`).click(function () {
+      editToAera(to);
+    });
+  }
+
+  function editToAera(to) {
+    $('#to').val(to);
+    $('#msg').val('');
+    $('span[name="message-content"]').removeClass('editing');
+    $('#send').attr('name', 'send');
+    return;
   }
 
   function bindSingleEditText(to, id) {
-    $(`#${id}`).click(function () {
+    $(`#content${id}`).click(function () {
       editInputAera(to, id);
     });
   }
 
   function editInputAera(to, id) {
     if (!!id) {
-      $("#to").val(to);
-      let msgText = $(`#${id}`).text();
+      $('#to').val(to);
+      $("#to").prop("readonly", true);
+      let msgText = $(`#message${id}`).text().replace(/\(edited\)$/, '');
       // let arr = msgText.replace('(edited)', '').split(':');
       // msgText = arr.length > 1 ? arr[1] : arr[0];
-      const length = ditStatusName.length;
-      msgText = msgText.slice(-length) === editStatusName ? msgText.substring(0, msgText.length - length) : msgText.substring(0);
-      $("#msg").val(msgText.trim());
-      $('li').removeClass("editing");
-      $(`#${id}`).addClass("editing");
-      $("#send").attr("name", id);
+      // const length = editStatusName.length;
+      // msgText = msgText.slice(-length) === editStatusName ? msgText.substring(0, msgText.length - length) : msgText.substring(0);
+      let editedMsg = msgText.replace(/^[\-][>]\s\w*[\:][\s]/, '');
+      $('#msg').val(editedMsg);
+      $('span[name="message-content"]').removeClass('editing');
+      $(`#content${id}`).addClass('editing');
+      $('#send').attr('name', id);
     }
     return;
   }
+
+  function bindSingleDeleteButton(to, id) {
+    $(`#del${id}`).click(function () {
+      deleteMsg(to, id);
+    });
+  }
+
+  function deleteMsg(to, id) {
+    if (!!id) {
+      $(`#${id}`).remove();
+      records[id] = null;
+      action = 'delete';
+      msg = '';
+      socket.emit('chat', to, id, msg, action);
+    }
+    return;
+  }
+
 });
 
-// function bindAllEditText() {
-//   $('li').click(function () {
-//     let id = $(this).attr('id');
-//     let to = $(this).attr('name');
-//     editInputAera(to, id);
-//   });
-// }
 
