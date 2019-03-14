@@ -2,29 +2,33 @@
 <html>
 
 <head>
+
   <title>Socket.IO chat</title>
   <link rel="stylesheet" type="text/css" href="style.css" />
 </head>
 
 <body>
   <div class="wrapper">
-    <div class="message-window">
+    <div class="top-box">
       <ul id="messages"></ul>
     </div>
-    <div class="form-window">
-      <div class="sub"><input id='me' type="text" placeholder="me" /><button id='sub'>sub</button></div>
-      <div class="form">
-        <form action="">
-          <div class="input"><input id='to' type="text" placeholder="to" />
-          <input id="msg" autocomplete="off" /></div>
-          <div class="button"><button id="send" name="send">Send</button><button id="new" name="new">New</button></div>
-        </form>
+    <div class="bottom-box">
+      <div class="row">
+        <input id='me' type="text" placeholder="me" value="js" />
+        <button id='sub'>Sub</button>
+      </div>
+      <div class="row">
+        <input id='to' type="text" placeholder="to" contenteditable='true' value="ts" />
+      </div>
+      <div class="row">
+        <input id="msg" autocomplete="off" value="bb" />
+        <button id="send" name="send">Send</button>
       </div>
     </div>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
-    <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
-    <script src="index.js"></script>
   </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js"></script>
+  <script src="https://code.jquery.com/jquery-1.11.1.js"></script>
+  <script src="index.js"></script>
 </body>
 
 </html>

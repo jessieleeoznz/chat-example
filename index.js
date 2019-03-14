@@ -4,24 +4,11 @@ $(function () {
   var records = {};
   const editStatusName = "(edited)";
   let action;
+  let currentMsgs = {};
 
-  $("#send").click(function () {
-    let id = $('#send').attr('name');
-    let msg = $('#msg').val();
-    if (id === "send") {
-      id = $.now();
-    }
-    sendMsg(id, msg);
-    $('#msg').val('');
-    $('#send').attr('name', 'send');
-    return false;
-  });
-
-  $("#new").click(function () {
-    $('span[name="message-content"]').removeClass('editing');
-    $("#to").prop("readonly", false);
-    $("#send").attr('name', 'send');
-    return false
+  $(`#messages`).click(function (e) {
+    // e.preventDefault();
+    console.log('#message', e);
   });
 
   $("#me").keyup(function (ev) {
@@ -33,6 +20,23 @@ $(function () {
   $('#sub').click(() => {
     sub();
   });
+
+  $("#msg").keyup(function (ev) {
+    if (ev.which === 13) {
+      sendMsg();
+    }
+  });
+
+  $("#send").click(function () {
+    sendMsg();
+  });
+
+  // $("#new").click(function () {
+  //   $('span[name="message-content"]').removeClass('editing');
+  //   $("#to").prop("readonly", false);
+  //   $("#send").attr('name', 'send');
+  //   return false
+  // });
 
   function sub() {
     if (socket) {
@@ -70,7 +74,12 @@ $(function () {
         if (!!records[id]) {
           $(`#message${id}`).html(`<- ${from}: ${msg}${editStatusName}`);
         } else {
-          dispMsg(from, id, `<div id=message${id}><span id=name${id} name=message-name><- ${from}: </span><span id=message-content>${msg}</span></div>`);
+          dispMsg(from, id, `
+          <div id=message${id}>
+            <span id=name${id} name=message-name><- ${from}: </span>
+            <span id=message-content>${msg}</span>
+          </div>
+          `);
           let to = from;
           bindSingleEditTo(to, id);
         }
@@ -82,28 +91,44 @@ $(function () {
     });
   }
 
-  function sendMsg(id, msg) {
+  function sendMsg() {
+    let id = $('#send').attr('name');
+    let msg = $('#msg').val();
+    if (id === "send") {
+      id = $.now();
+    }
     let to = $('#to').val();
     action = 'display';
     socket.emit('chat', to, id, msg, action);
-    if (!!records[id]) {
-      editMsg(to, id, msg);
-    } else {
-      dispMsg(to, id, `<div id=message${id} class=inline><span id=name${id} name=message-name>-> ${to}: </span><span id=content${id} name=message-content>${msg}</span></div>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp<div id=del${id} class=inline style="display:none"><span id=x>X</span></div>`);
-      $(`#${id}`).hover(
-        function () {
-          $(`#del${id}`).css('display', 'inline');
-        }, function () {
-          $(`#del${id}`).css('display', 'none');
-        }
-      );
-    }
+    // if (!!records[id]) {
+    //   editMsg(to, id, msg);
+    // } else {
+    dispMsg(to, id, `
+    <div id="message${id}" class="message-wrapper">
+      <span id="name${id}" name="message-name">-> ${to}: </span>
+      <span id="content${id}" name="message-content" class="content" contenteditable="true">${msg}</span>
+    </div>
+    <div class="button-wrapper">
+    <div id="save${id}" class="editButton">
+      <input type="button" value="save changes">
+    </div>
+    <div id="cancel${id}" class="editButton">
+      <input type="button" value="cancel">
+    </div>
+    <div id="del${id}" class="delButton">
+      <span class="x">X</span>
+    </div>
+    </div>
+    `);
+    // }
     bindSingleEditTo(to, id);
     bindSingleEditText(to, id);
     bindSingleDeleteButton(to, id);
-    $('span[name="message-content"]').removeClass('editing');
+    // $('span[name="message-content"]').removeClass('editing');
     $("#to").prop("readonly", false);
-    return;
+    $('#msg').val('');
+    $('#send').attr('name', 'send');
+    return false;
   }
 
   function dispSubmsg(msg) {
@@ -111,27 +136,21 @@ $(function () {
     $('#messages').append($(`<li id=Submsg${to}>`).text(msg));
     let messageBody = document.querySelector('#messages');
     messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
-    // window.scrollTo(0, document.body.scrollHeight);
     bindSubmsg(to);
-  }
-
-  function dispMsg(to, id, msg) {
-    $('#messages').append(`<li id = ${id} name = ${to}>${msg}`);
-    records[id] = id;
-    let messageBody = document.querySelector('#messages');
-    messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
-    // window.scrollTo(0, document.body.scrollHeight);
-  }
-
-  function editMsg(to, id, msg) {
-    $(`#name${id}`).html(`-> ${to}: `);
-    $(`#content${id}`).html(`${msg}${editStatusName}`);
   }
 
   function bindSubmsg(to) {
     $(`#Submsg${to}`).click(function () {
       editToAera(to);
     });
+  }
+
+  function dispMsg(to, id, msg) {
+    $('#messages').append(`<li id = ${id}  class="message" name = ${to}>${msg}`);
+    records[id] = id;
+    currentMsgs[id] = $(`#content${id}`).text();
+    let messageBody = document.querySelector('#messages');
+    messageBody.scrollTop = messageBody.scrollHeight - messageBody.clientHeight;
   }
 
   function bindSingleEditTo(to, id) {
@@ -149,9 +168,29 @@ $(function () {
   }
 
   function bindSingleEditText(to, id) {
-    $(`#content${id}`).click(function () {
-      editInputAera(to, id);
+    $(`#content${id}`).click(function (e) {
+      console.log('#content', e);
     });
+    $(`#content${id}`).focus(function (e) {
+      $(`.editButton`).css('display', 'none');
+      // editInputAera(to, id);
+      editTextarea(to, id);
+      console.log('#content', e);
+      e.stopPropagation();
+      e.preventDefault();
+    });
+    $(`#save${id}`).click(function () {
+      saveEdits(to, id);
+    });
+    $(`#cancel${id}`).click(function () {
+      cancelEdits(to, id);
+    });
+  }
+
+  function editMsg(to, id, msg) {
+    $(`#name${id}`).html(`-> ${to}: `);
+    $(`#content${id}`).html(`${msg}${editStatusName}`);
+    currentMsgs[id] = $(`#content${id}`).text();
   }
 
   function editInputAera(to, id) {
@@ -170,6 +209,29 @@ $(function () {
       $('#send').attr('name', id);
     }
     return;
+  }
+
+  function editTextarea(to, id) {
+    let text = $(`#content${id}`).text().replace(/\(edited\)$/, '');
+    $(`#content${id}`).html(text);
+    $(`#save${id}`).css('display', 'inline');
+    $(`#cancel${id}`).css('display', 'inline');
+    return;
+  }
+
+  function saveEdits(to, id) {
+    let msg = $(`#content${id}`).text();
+    action = 'display';
+    socket.emit('chat', to, id, msg, action);
+    editMsg(to, id, msg);
+    $(`#save${id}`).css('display', 'none');
+    $(`#cancel${id}`).css('display', 'none');
+  }
+
+  function cancelEdits(to, id) {
+    $(`#content${id}`).html(currentMsgs[id]);
+    $(`#save${id}`).css('display', 'none');
+    $(`#cancel${id}`).css('display', 'none');
   }
 
   function bindSingleDeleteButton(to, id) {
