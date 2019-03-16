@@ -47,7 +47,7 @@ body {
 
 #messages li {
   display: flex;
-  flex-direction: column;
+  /* flex-direction: column; */
   padding: 5px 10px;
   overflow-y: scroll;
   font-size: 1em;
@@ -68,6 +68,7 @@ body {
 
 .message-wrapper {
   word-break: break-word;
+  min-width: 150px;
 }
 
 .editButton {
@@ -79,10 +80,11 @@ body {
   background: rgb(233, 230, 230);
   font-size: 1em;
   text-align: center;
-  width: 20px;
-  height: 20px;
+  width: 40px;
+  height: 15px;
   border: 1px grey;
   border-radius: 5px;
+  margin-left: 5px;
 }
 
 #me {
@@ -94,6 +96,7 @@ body {
 }
 
 .row {
+  width: -webkit-fill-available;
   display: flex;
   flex-direction: row;
   justify-content: left;
@@ -112,7 +115,7 @@ body {
   width: 50%;
 }
 
-#msg {
+.msg {
   width: 50%;
   padding: 8px 10px;
   border: 1px solid #ccc;
@@ -135,6 +138,10 @@ button {
   font-size: inherit;
   color: black;
   padding: 8px 10px;
+}
+
+.content {
+  width: 100px;
 }
 
 .content:hover {
