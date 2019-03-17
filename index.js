@@ -169,21 +169,24 @@ $(function () {
   }
 
   function editNameInputAera(to) {
-    $('#to').val(to);
     let from = $('#me').val();
-    if (from === "js" && to === "ts") {
-      $('#msg').val('I am js, I love ' + to + '!');
-    } else if (from === "ts" && to === "js") {
-      $('#msg').val('I am ts, I love ' + to + '!');
-    } else if (from === to) {
-      $('#msg').val('I told to myself now, stupid!');
-    } else if (from === "js" && to != "ts") {
-      $('#msg').val('I do not love ' + to + ', I only love my ts!');
-    } else if (from === "ts" && to != "js") {
-      $('#msg').val('I do not love ' + to + ', I only love my js!');
-    } else if (from != "ts" || from != "js") {
-      $('#msg').val('I am ' + from + ', I am cry......');
+
+    const returnMsg = {
+      jsts: 'I am js, I love ' + to + '!',
+      tsjs: 'I am ts, I love ' + to + '!',
+      jsjs: 'I told to myself now, stupid!',
+      'js!': 'I do not love ' + to + ', I only love my ts!',
+      'ts!': 'I do not love ' + to + ', I only love my js!',
+      '!!': 'I am ' + from + ', I am cry......',
+    };
+    const getKey = (str) => str === 'js' || str === 'ts' ? str : '!';
+    let key = getKey(from) + getKey(to);
+    if (!Object.keys(returnMsg).includes(key)) {
+      key = '!!';
     }
+
+    $('#to').val(to);
+    $('#msg').val(returnMsg[key]);
   }
 
   function bindEditContentArea(to, id) {
